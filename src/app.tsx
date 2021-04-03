@@ -6,14 +6,6 @@ import { Button, TextInput } from "react-native-paper"
 import { useSimpleStorage } from "./use-storage"
 import { DateTime } from "luxon"
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    marginTop: 20,
-  },
-})
-
 type Change = {
   amount: number
   description: string
@@ -22,11 +14,7 @@ type Change = {
 }
 type State = readonly Change[]
 
-export function App() {
-  const [storedData, setStoredData] = useSimpleStorage(
-    "state",
-    [] as readonly any[]
-  )
+export function App({ val, onChange }: { val: any; onChange: any }) {
   const [state, dispatch] = useReducer(
     (
       state: State,
@@ -49,63 +37,63 @@ export function App() {
         ...state,
       ]
     },
-    storedData || []
+    val
   )
   useEffect(() => {
-    setStoredData(state)
+    onChange(state)
   }, [state])
+
   const balance = useMemo(() => state.reduce((a, b) => a + b.amount, 0), [
     state,
   ])
   const [inputText, setInputText] = useState("")
   const [descInput, setDescInput] = useState("")
+  const [_, forceUpdate] = useReducer((a) => a + 1, 0)
 
   return (
-    <View style={styles.container}>
+    <View style={{ padding: 8 }}>
       <StatusBar style="auto" />
-      <Text>Your balance: {balance}</Text>
-      <View>
-        <TextInput
-          mode="flat"
-          style={{ flexGrow: 1, marginRight: 8 }}
-          keyboardType="numeric"
-          value={inputText}
-          onChangeText={(value) => {
-            if (
-              !value ||
-              value === "-" ||
-              Number.isFinite(Number.parseFloat(value.replace(/ /g, "")))
-            ) {
-              setInputText(value)
-            }
-          }}
-        />
-        <TextInput
-          mode="flat"
-          style={{ flexGrow: 1, marginRight: 8 }}
-          value={descInput}
-          onChangeText={(value) => {
-            setDescInput(value)
-          }}
-        />
-        <Button
-          mode="contained"
-          onPress={() => {
-            setDescInput("")
-            setInputText("")
-            dispatch({
-              type: "push",
-              value: {
-                description: descInput,
-                amount: Number.parseFloat(inputText.replace(/ /g, "")),
-                time: DateTime.local().toISO(),
-              },
-            })
-          }}
-        >
-          <Text>Add</Text>
-        </Button>
-      </View>
+      <Text style={{ fontSize: 20 }}>Your balance: {balance}</Text>
+      <TextInput
+        mode="flat"
+        style={{ flexGrow: 1, marginRight: 8 }}
+        keyboardType="numeric"
+        value={inputText}
+        onChangeText={(value) => {
+          if (
+            !value ||
+            value === "-" ||
+            Number.isFinite(Number.parseFloat(value.replace(/ /g, "")))
+          ) {
+            setInputText(value)
+          }
+        }}
+      />
+      <TextInput
+        mode="flat"
+        style={{ flexGrow: 1, marginRight: 8 }}
+        value={descInput}
+        onChangeText={(value) => {
+          setDescInput(value)
+        }}
+      />
+      <Button
+        mode="contained"
+        onPress={() => {
+          setDescInput("")
+          setInputText("")
+          dispatch({
+            type: "push",
+            value: {
+              description: descInput,
+              amount: Number.parseFloat(inputText.replace(/ /g, "")),
+              time: DateTime.local().toISO(),
+            },
+          })
+        }}
+      >
+        <Text>Add</Text>
+      </Button>
       <FlatList
         data={state}
         renderItem={({ item }) => (
@@ -122,6 +110,9 @@ export function App() {
             </Button>
           </View>
         )}
+        scrollEnabled={true}
+        refreshing={false}
+        onRefresh={forceUpdate}
         keyExtractor={(item) => item.id + ""}
       />
     </View>
